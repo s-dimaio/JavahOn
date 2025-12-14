@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Testing
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Authentication tokens (SECURITY - Never commit!)
+.hon-tokens.json
+**/.*-tokens.json
+*.tokens.json
+*-tokens.json
+
+# Build output
+dist/
+build/
+*.tgz
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# ===========================================
+# Development/Reference folders (NOT for production)
+# ===========================================
+
+# Source backup
+src_bck/
+lib_bck/
+
+# Python reference implementations
+hon-reference/
+hon-auth-reference/
+hon-devices-reference/
+hon-mqtt-reference/
+hon-diagnostics-reference/
+
+# Debug/development logs
+log/
+diagnostics/
+
+# ===========================================
+# End development exclusions
+# ===========================================
+

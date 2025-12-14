@@ -1,0 +1,58 @@
+{
+  "name": "javahon",
+  "version": "1.0.0",
+  "description": "A JavaScript/Node.js library for hOn authentication - CommonJS port of pyhOn",
+  "main": "index.js",
+  "scripts": {
+    "test": "test\\run-tests.cmd",
+    "test:basic": "node test/test_basic.js",
+    "test:events": "node test/test_events.js",
+    "test:javahon": "node test/test_javahon.js",
+    "start": "node lib/index.js",
+    "auth": "node examples/interactive-auth.js",
+    "login": "node examples/interactive-auth.js",
+    "mqtt": "node examples/mqtt-test.js",
+    "appliances": "node examples/appliance-test.js",
+    "diagnostics": "node examples/diagnostic-export.js"
+  },
+  "keywords": [
+    "hon",
+    "haier",
+    "candy",
+    "authentication",
+    "iot",
+    "smart-home",
+    "oauth2",
+    "salesforce",
+    "cognito",
+    "pyhon",
+    "nodejs"
+  ],
+  "author": "JavahOn Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "axios": "^0.27.2",
+    "axios-cookiejar-support": "^6.0.5",
+    "bcrypt": "^5.0.1",
+    "cheerio": "^1.0.0-rc.12",
+    "express": "^4.21.2",
+    "http-proxy": "^1.18.1",
+    "jsonwebtoken": "^8.5.1",
+    "mqtt": "^5.14.1",
+    "open": "^9.1.0",
+    "tough-cookie": "^4.1.4"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/s-dimaio/JavahOn.git"
+  },
+  "bugs": {
+    "url": "https://github.com/s-dimaio/JavahOn/issues"
+  },
+  "homepage": "https://github.com/s-dimaio/JavahOn#readme"
+}
