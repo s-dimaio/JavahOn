@@ -62,7 +62,7 @@ hon-diagnostics-reference/
 
 # Debug/development logs
 log/
-diagnostics/
+/diagnostics/
 
 # ===========================================
 # End development exclusions
