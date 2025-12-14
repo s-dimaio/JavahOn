@@ -3,7 +3,7 @@
  * Demonstrates appliance diagnostic data export in various formats
  */
 
-const { HonAuth, HonAPI, HonDevice, diagnostics } = require('..');
+const { HonAuth, HonAPI, HonDevice, HonAppliance, diagnostics } = require('..');
 
 async function main() {
     console.log('╔════════════════════════════════════════════════════════════╗');
@@ -38,14 +38,17 @@ async function main() {
 
         // Step 3: Load appliances
         console.log('📱 Step 3: Loading appliances...');
-        const appliances = await api.loadAppliances();
-        console.log(`✅ Found ${appliances.length} appliance(s)`);
+        const appliancesRaw = await api.loadAppliances();
+        console.log(`✅ Found ${appliancesRaw.length} appliance(s)`);
         console.log();
 
-        if (appliances.length === 0) {
+        if (appliancesRaw.length === 0) {
             console.log('No appliances found.');
             return;
         }
+
+        // Convert to HonAppliance instances
+        const appliances = appliancesRaw.map(data => new HonAppliance(api, data));
 
         // Display appliances
         console.log('Available appliances:');
@@ -54,37 +57,87 @@ async function main() {
         });
         console.log();
 
-        // Use first appliance
-        const appliance = appliances[0];
-        console.log(`Selected: ${appliance.typeName || 'Unknown'} (${appliance.modelName || 'Unknown'})`);
+        // Step 4: Load commands for all appliances
+        console.log('⚙️  Step 4: Loading commands for all appliances...');
+        const appliancesWithCommands = [];
+        
+        for (let i = 0; i < appliances.length; i++) {
+            const appliance = appliances[i];
+            try {
+                console.log(`  Loading commands for ${appliance.typeName || 'Unknown'} (${i + 1}/${appliances.length})...`);
+                await appliance.loadCommands();  // Use appliance.loadCommands() instead of api.loadCommands()
+                appliancesWithCommands.push(appliance);
+                console.log(`  ✓ Loaded ${Object.keys(appliance.commands || {}).length} commands`);
+            } catch (error) {
+                console.log(`  ⚠ Failed to load commands: ${error.message}`);
+                console.log(`  Stack: ${error.stack}`);
+                // Still add the appliance even if commands failed
+                appliancesWithCommands.push(appliance);
+            }
+        }
+        console.log(`✅ Commands loaded for ${appliancesWithCommands.length} appliance(s)`);
         console.log();
 
-        // Step 4: Display appliance summary
-        console.log('📊 Step 4: Appliance Summary');
-        console.log(diagnostics.formatApplianceSummary(appliance));
-        console.log();
-
-        // Step 5: Export to JSON (migliore di YAML per dati strutturati)
-        console.log('📄 Step 5: Exporting to JSON...');
+        // Step 5: Export to JSON with all appliances and their commands
+        console.log('📄 Step 5: Exporting all appliances to JSON...');
         
         const fs = require('fs').promises;
         const jsonFile = './diagnostics/appliance_diagnostic.json';
-        const jsonContent = JSON.stringify({
-            appliance: {
-                id: appliance.applianceId,
+        
+        // Build appliance data with commands
+        const appliancesData = appliancesWithCommands.map(appliance => {
+            const commandsList = [];
+            
+            // Extract commands if available
+            const commands = appliance.commands || {};
+            for (const [cmdName, cmdObj] of Object.entries(commands)) {
+                const cmdParams = {};
+                
+                // Extract parameters if available
+                if (cmdObj.parameters) {
+                    for (const [paramName, paramObj] of Object.entries(cmdObj.parameters)) {
+                        cmdParams[paramName] = {
+                            type: paramObj.constructor.name,
+                            value: paramObj.value,
+                            min: paramObj.min,
+                            max: paramObj.max,
+                            step: paramObj.step,
+                            values: paramObj.values
+                        };
+                    }
+                }
+                
+                commandsList.push({
+                    name: cmdName,
+                    parameters: cmdParams
+                });
+            }
+            
+            return {
+                id: appliance.info.applianceId,
                 brand: appliance.brand,
                 model: appliance.modelName,
-                type: appliance.applianceTypeName,
-                series: appliance.series,
-                serialNumber: appliance.serialNumber,
+                type: appliance.applianceType,
+                typeName: appliance.info.applianceTypeName,
+                series: appliance.info.series,
+                serialNumber: appliance.info.serialNumber,
                 code: appliance.code,
-                connectivity: appliance.connectivity,
-                status: appliance.applianceStatus,
-                enrollmentDate: appliance.enrollmentDate
-            },
+                connectivity: appliance.info.connectivity,
+                status: appliance.info.applianceStatus,
+                enrollmentDate: appliance.info.enrollmentDate,
+                firmware: appliance.info.fwVersion,
+                commands: commandsList,
+                commandsCount: commandsList.length
+            };
+        });
+        
+        const jsonContent = JSON.stringify({
+            appliances: appliancesData,
             metadata: {
                 exportedAt: new Date().toISOString(),
-                exported_by: 'JavahOn Diagnostic Export'
+                exported_by: 'JavahOn Diagnostic Export',
+                total_appliances: appliancesData.length,
+                has_commands: appliancesData.some(a => a.commands.length > 0)
             }
         }, null, 2);
         
@@ -93,31 +146,58 @@ async function main() {
         
         console.log(`✅ JSON exported to: ${jsonFile}`);
         console.log(`   File size: ${diagnostics.formatBytes(jsonContent.length)}`);
+        console.log(`   Total appliances: ${appliancesData.length}`);
         console.log();
-        console.log('Preview:');
+        console.log('Preview (first 100 lines):');
         console.log('─'.repeat(60));
-        console.log(jsonContent);
+        const lines = jsonContent.split('\n');
+        console.log(lines.slice(0, 100).join('\n'));
+        if (lines.length > 100) {
+            console.log(`... [${lines.length - 100} more lines]`);
+        }
         console.log('─'.repeat(60));
         console.log();
 
-        // Step 6-9: Anonymized export
+        // Step 6: Anonymized export
         console.log('🔒 Step 6: Creating anonymized export...');
+        
+        const anonAppliancesData = appliancesData.map(appliance => ({
+            brand: appliance.brand,
+            model: appliance.model,
+            type: appliance.type,
+            typeName: appliance.typeName,
+            series: appliance.series,
+            connectivity: appliance.connectivity,
+            status: appliance.status,
+            enrollmentDate: appliance.enrollmentDate,
+            firmware: appliance.firmware,
+            serialNumber: '[ANONYMIZED]',
+            code: '[ANONYMIZED]',
+            id: '[ANONYMIZED]',
+            commandsCount: appliance.commandsCount,
+            commands: appliance.commands.map(cmd => ({
+                name: cmd.name,
+                parametersCount: Object.keys(cmd.parameters).length,
+                parameters: Object.keys(cmd.parameters).reduce((acc, paramName) => {
+                    const param = cmd.parameters[paramName];
+                    acc[paramName] = {
+                        type: param.type,
+                        hasMinMax: !!(param.min || param.max),
+                        hasValues: !!(param.values && param.values.length)
+                        // value omitted for privacy
+                    };
+                    return acc;
+                }, {})
+            }))
+        }));
+        
         const anonymizedJson = JSON.stringify({
-            appliance: {
-                brand: appliance.brand,
-                model: appliance.modelName,
-                type: appliance.applianceTypeName,
-                series: appliance.series,
-                connectivity: appliance.connectivity,
-                status: appliance.applianceStatus,
-                enrollmentDate: appliance.enrollmentDate,
-                serialNumber: '[ANONYMIZED]',
-                code: '[ANONYMIZED]'
-            },
+            appliances: anonAppliancesData,
             metadata: {
                 exportedAt: new Date().toISOString(),
                 anonymized: true,
-                sensitive_data_removed: ['serialNumber', 'code', 'MAC address', 'coordinates']
+                total_appliances: anonAppliancesData.length,
+                sensitive_data_removed: ['serialNumber', 'code', 'applianceId', 'MAC address', 'coordinates', 'parameter values']
             }
         }, null, 2);
         
@@ -126,34 +206,33 @@ async function main() {
         
         console.log(`✅ Anonymized export saved to: ${anonFile}`);
         console.log(`   File size: ${diagnostics.formatBytes(anonymizedJson.length)}`);
-        console.log('   Sensitive data (serial, code, MAC) anonymized');
+        console.log(`   Total appliances: ${anonAppliancesData.length}`);
+        console.log('   Sensitive data (serial, code, MAC, parameter values) anonymized');
         console.log();
 
-        // Step 7-9: Simplified (data structure doesn't support commands/rules yet)
-        console.log('⚙️  Step 7: Command Structure...');
-        console.log(`ℹ️  Note: Commands/rules require appliance-specific initialization`);
-        console.log(`   (Available: ${appliances.length} appliances loaded)`);
-        console.log();
-
-        // Step 10: Statistics
-        console.log('📈 Step 8: Export Summary');
+        // Step 7: Export Summary
+        console.log('📈 Step 7: Export Summary');
         console.log('─'.repeat(60));
-        console.log(`Total appliances:        ${appliances.length}`);
-        console.log(`Brand:                   ${appliance.brand}`);
-        console.log(`Model:                   ${appliance.modelName}`);
-        console.log(`Type:                    ${appliance.applianceTypeName}`);
-        console.log(`Connectivity:            ${appliance.connectivity}`);
-        console.log(`Status:                  ${appliance.applianceStatus}`);
+        console.log(`Total appliances:        ${appliancesData.length}`);
+        console.log(`Appliances with commands: ${appliancesData.filter(a => a.commands.length > 0).length}`);
+        console.log(`Total commands:          ${appliancesData.reduce((sum, a) => sum + a.commands.length, 0)}`);
         console.log(`JSON export size:        ${diagnostics.formatBytes(jsonContent.length)}`);
         console.log(`Anonymized JSON size:    ${diagnostics.formatBytes(anonymizedJson.length)}`);
         console.log('─'.repeat(60));
         console.log();
 
+        // Appliances breakdown
+        console.log('Appliances breakdown:');
+        appliancesData.forEach((app, idx) => {
+            console.log(`  ${idx + 1}. ${app.typeName} (${app.brand}) - ${app.commands.length} commands`);
+        });
+        console.log();
+
         console.log('✅ All exports completed successfully!');
         console.log();
         console.log('Generated files:');
-        console.log('  • ./diagnostics/appliance_diagnostic.json');
-        console.log('  • ./diagnostics/appliance_diagnostic_anonymous.json');
+        console.log('  • ./diagnostics/appliance_diagnostic.json (with commands)');
+        console.log('  • ./diagnostics/appliance_diagnostic_anonymous.json (anonymized)');
         console.log();
 
     } catch (error) {
