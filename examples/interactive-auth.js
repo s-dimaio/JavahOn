@@ -114,8 +114,8 @@ async function testAuthentication() {
 
     // Create authentication instance
     console.log('🔧 Step 2: Initializing authentication...');
-    const auth = new HonAuth(null, email, password, device);
-    console.log('   ✅ Authentication instance ready');
+    const auth = new HonAuth(null, email, password, device, true);  // Enable debug logging
+    console.log('   ✅ Authentication instance ready (debug mode: ON)');
     console.log();
 
     // Perform authentication

@@ -29,7 +29,7 @@ async function authenticateWithCredentials(email, password) {
 
     // Create authentication instance
     console.log('🔧 Step 2: Initializing authentication...');
-    const auth = new HonAuth(null, email, password, device);
+    const auth = new HonAuth(null, email, password, device, false);  // Disable debug logging for clean output
     console.log('   ✅ Authentication instance ready');
     console.log();
 
