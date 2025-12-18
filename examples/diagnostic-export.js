@@ -25,7 +25,7 @@ async function main() {
         // Step 1: Authentication
         console.log('🔑 Step 1: Authenticating...');
         const device = new HonDevice('DiagnosticExport');
-        const auth = new HonAuth(null, email, password, device);
+        const auth = new HonAuth(null, email, password, device, false);  // Disable debug for clean output
         await auth.authenticate();
         console.log('✅ Authentication successful!');
         console.log();

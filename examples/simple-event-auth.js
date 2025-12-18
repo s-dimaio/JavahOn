@@ -14,7 +14,7 @@ const TOKEN_FILE = '.hon-tokens.json';
 
 async function main() {
   // 1. Create authenticator
-  const auth = new HonAuth(null, EMAIL, PASSWORD);
+  const auth = new HonAuth(null, EMAIL, PASSWORD);  // debug=false by default
 
   // 2. Listen for tokens event - THAT'S IT!
   auth.on('tokens', (tokens) => {

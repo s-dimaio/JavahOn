@@ -26,7 +26,7 @@ async function main() {
 
         console.log('\n1. Authenticating...');
         const device = new HonDevice('MQTT-Test');
-        const auth = new HonAuth(null, email, password, device);
+        const auth = new HonAuth(null, email, password, device);  // debug=false by default
         await auth.authenticate();
         console.log('✓ Authentication successful');
 

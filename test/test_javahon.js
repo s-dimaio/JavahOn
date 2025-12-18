@@ -145,6 +145,21 @@ test('should create authentication instance', () => {
   assertEqual(auth._loginData.email, 'test@example.com');
   assertEqual(auth._loginData.password, 'password');
   assertEqual(auth._device, device);
+  assertEqual(auth._debug, false);  // Default debug should be false
+});
+
+test('should create authentication instance with debug enabled', () => {
+  const device = new HonDevice('TestDevice');
+  const auth = new HonAuth(null, 'test@example.com', 'password', device, true);
+  
+  assertEqual(auth._debug, true);
+});
+
+test('should create authentication instance with debug disabled explicitly', () => {
+  const device = new HonDevice('TestDevice');
+  const auth = new HonAuth(null, 'test@example.com', 'password', device, false);
+  
+  assertEqual(auth._debug, false);
 });
 
 test('should check token expiration', () => {

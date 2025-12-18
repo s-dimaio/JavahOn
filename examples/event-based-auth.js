@@ -104,7 +104,7 @@ async function main() {
   const tokenManager = new TokenManager(TOKEN_FILE);
 
   // Create authenticator
-  const auth = new HonAuth(null, EMAIL, PASSWORD);
+  const auth = new HonAuth(null, EMAIL, PASSWORD);  // debug=false by default
 
   // Setup event listener for automatic token saving
   // This will be called EVERY time tokens are generated or updated

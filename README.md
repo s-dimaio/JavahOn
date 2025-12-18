@@ -82,7 +82,9 @@ async function authenticate() {
     try {
         // Create device and authentication instances
         const device = new HonDevice('MyApp-Device');
-        const auth = new HonAuth(null, 'your-email@example.com', 'your-password', device);
+        
+        // Create auth instance - disable debug for production
+        const auth = new HonAuth(null, 'your-email@example.com', 'your-password', device, false);
         
         // Perform authentication
         await auth.authenticate();
@@ -108,6 +110,39 @@ async function authenticate() {
 
 authenticate();
 ```
+
+### Debug Mode
+
+The library supports a global debug mode that controls `console.log` output across all components. When enabled, you'll see detailed information about:
+- **Authentication**: OAuth URLs, cookies, login steps, token refresh
+- **API Operations**: Request/response details, command loading, appliance queries
+- **MQTT Communication**: Connection status, subscriptions, real-time updates
+- **Appliances**: Command execution, parameter updates
+
+When disabled (default), only errors are displayed via `console.error`.
+
+```javascript
+// Enable debug mode (verbose logging for development/troubleshooting)
+const device = new HonDevice('MyApp');
+const auth = new HonAuth(null, 'email@example.com', 'password', device, true);
+
+// Debug setting automatically propagates to ALL library components:
+// - HonAPI (API calls, command loading)
+// - HonAppliance (appliance operations)
+// - HonCommand (command execution)
+// - MQTTClient (real-time communication)
+// - Connection handlers (cookies, token management)
+
+const api = new HonAPI(auth);  // Inherits debug setting
+const appliances = await api.loadAppliances();  // Will show debug logs if enabled
+
+// Disable debug mode (default - clean output for production)
+const auth = new HonAuth(null, 'email@example.com', 'password', device, false);
+// or simply omit the parameter:
+const auth = new HonAuth(null, 'email@example.com', 'password', device);
+```
+
+**Best Practice:** Enable debug mode during development and testing, but disable it in production environments to reduce log noise.
 
 ### Event-Based Token Saving (Recommended)
 
@@ -149,57 +184,6 @@ authenticateWithEvents();
 
 **See:** [`examples/event-based-auth.js`](examples/event-based-auth.js) for a complete working example with token management.
 
-### Manual Browser Authentication (More Secure)
-
-For enhanced security, you can use browser-based authentication where the user enters credentials directly in the official hOn web form:
-
-```javascript
-const { HonManualAuth, HonAPI, HonDevice } = require('./index.js');
-
-async function authenticateWithBrowser() {
-    try {
-        // Create device and manual auth instance
-        const device = new HonDevice('MyApp-Device');
-        const auth = new HonManualAuth(null, null, null, device);
-        
-        // Start browser-based authentication
-        // This will:
-        // 1. Start a local web server
-        // 2. Open the hOn login page in your default browser
-        // 3. Wait for you to log in
-        // 4. Intercept the OAuth callback
-        await auth.authenticateManual(3000); // port 3000
-        
-        console.log('Authentication successful!');
-        
-        // Create API client with authenticated session
-        const api = new HonAPI(auth);
-        const appliances = await api.loadAppliances();
-        console.log(`Found ${appliances.length} appliances`);
-        
-    } catch (error) {
-        console.error('Authentication failed:', error.message);
-    }
-}
-
-authenticateWithBrowser();
-```
-
-**Benefits of Manual Authentication:**
-- ✅ **More Secure** - Password never handled by your application
-- ✅ **2FA Support** - Works with two-factor authentication
-- ✅ **CAPTCHA-proof** - Handles any security measures hOn adds
-- ✅ **Official Form** - Uses the real hOn login page
-
-**When to use Manual vs Headless:**
-- **Use Manual** for: Desktop apps, first-time setup, sensitive accounts
-- **Use Headless** for: Automation, servers, scripts, IoT devices
-
-Quick command:
-```bash
-npm run auth:manual
-```
-
 ### Using with Refresh Token
 
 ```javascript
@@ -223,33 +207,23 @@ async function authenticateWithRefreshToken() {
 ### Classes
 
 #### `HonAuth`
-Main authentication class handling the OAuth2 flow (headless mode).
-
-```javascript
-const auth = new HonAuth(session, email, password, device);
-await auth.authenticate();        // Perform full authentication
-await auth.refresh(refreshToken); // Refresh existing tokens
-auth.clear();                     // Clear authentication data
-```
-
-#### `HonManualAuth`
-Browser-based authentication class for manual login (extends HonAuth).
-
-```javascript
-const auth = new HonManualAuth(session, email, password, device);
-await auth.authenticateManual(port);  // Start browser-based auth (default port: 3000)
-// Then use like HonAuth: auth.accessToken, auth.cognitoToken, etc.
-````
-
-## 📚 API Reference
-
-### Classes
-
-#### `HonAuth`
 Main authentication class handling the OAuth2 flow.
 
+**Constructor:**
 ```javascript
-const auth = new HonAuth(session, email, password, device);
+const auth = new HonAuth(session, email, password, device, debug);
+```
+
+**Parameters:**
+- `session` (Object, optional) - Axios session instance (creates new if not provided)
+- `email` (String) - User email for authentication
+- `password` (String) - User password for authentication
+- `device` (HonDevice, optional) - Device info (creates default if not provided)
+- `debug` (Boolean, optional, default: `false`) - Enable debug logging (console.log output)
+
+**Methods:**
+```javascript
+const auth = new HonAuth(session, email, password, device, debug);
 await auth.authenticate();        // Perform full authentication
 await auth.refresh(refreshToken); // Refresh existing tokens
 auth.clear();                     // Clear authentication data
@@ -262,6 +236,47 @@ auth.clear();                     // Clear authentication data
 - `idToken` - OpenID Connect ID token
 - `tokenIsExpired` - Check if token has expired
 - `tokenExpiresSoon` - Check if token expires soon
+
+**Debug Mode:**
+When `debug` is `true`, the authentication process will log detailed information about each step (OAuth URLs, cookies, response data, etc.). This is useful for troubleshooting but should be disabled in production. Error messages are always displayed via `console.error` regardless of debug setting.`
+
+## 📚 API Reference
+
+### Classes
+
+#### `HonAuth`
+Main authentication class handling the OAuth2 flow.
+
+**Constructor:**
+```javascript
+const auth = new HonAuth(session, email, password, device, debug);
+```
+
+**Parameters:**
+- `session` (Object, optional) - Axios session instance (creates new if not provided)
+- `email` (String) - User email for authentication
+- `password` (String) - User password for authentication
+- `device` (HonDevice, optional) - Device info (creates default if not provided)
+- `debug` (Boolean, optional, default: `false`) - Enable debug logging (console.log output)
+
+**Methods:**
+```javascript
+const auth = new HonAuth(session, email, password, device, debug);
+await auth.authenticate();        // Perform full authentication
+await auth.refresh(refreshToken); // Refresh existing tokens
+auth.clear();                     // Clear authentication data
+```
+
+**Properties:**
+- `cognitoToken` - Cognito authentication token
+- `accessToken` - OAuth2 access token
+- `refreshToken` - OAuth2 refresh token
+- `idToken` - OpenID Connect ID token
+- `tokenIsExpired` - Check if token has expired
+- `tokenExpiresSoon` - Check if token expires soon
+
+**Debug Mode:**
+When `debug` is `true`, the authentication process will log detailed information about each step (OAuth URLs, cookies, response data, etc.). This is useful for troubleshooting but should be disabled in production. Error messages are always displayed via `console.error` regardless of debug setting.
 
 #### `HonAPI`
 Main API client for interacting with hOn services.
@@ -501,97 +516,13 @@ See [`examples/mqtt-test.js`](examples/mqtt-test.js) for a working example.
 
 If you're migrating from the Python pyhOn library:
 
-| Python (pyhOn) | JavaScript (JavahOn) |
-|----------------|---------------------|
-| `HonAuth()` | `new HonAuth()` |
-| `HonAPI()` | `new HonAPI()` |
-| `HonDevice()` | `new HonDevice()` |
+| Python (pyhOn)       | JavaScript (JavahOn)        |
+|----------------------|-----------------------------|
+| `HonAuth()`          | `new HonAuth()`             |
+| `HonAPI()`           | `new HonAPI()`              |
+| `HonDevice()`        | `new HonDevice()`           |
 | `await auth.login()` | `await auth.authenticate()` |
-| `async with api:` | `await api.create()` |
-
-## 🛠️ Development
-
-### Project Structure
-
-```
-JavahOn/
-├── index.js                 # Main library entry point (root level)
-├── package.json             # Dependencies and scripts
-├── README.md               # This file
-├── LICENSE                 # MIT License
-│
-├── lib/                     # Source code
-│   ├── auth/
-│   │   ├── authenticator.js     # Main authentication logic
-│   │   ├── device.js           # Device information handling
-│   │   └── session.js          # Session management
-│   ├── api/
-│   │   ├── client.js           # API client implementation
-│   │   └── handlers/           # HTTP connection handlers
-│   │       ├── base.js         # Base connection handler
-│   │       ├── auth.js         # Auth-specific handler
-│   │       ├── hon.js          # Authenticated hOn API handler
-│   │       └── anonym.js       # Anonymous API handler
-│   ├── appliances/
-│   │   ├── appliance.js        # Main appliance class
-│   │   ├── command.js          # Command management
-│   │   ├── commandLoader.js    # Load commands from API
-│   │   └── attribute.js        # Attribute value management
-│   ├── parameters/
-│   │   ├── base.js            # Base parameter class
-│   │   ├── enum.js            # Enumeration parameters
-│   │   ├── range.js           # Range parameters
-│   │   ├── fixed.js           # Fixed parameters
-│   │   └── program.js         # Program parameters
-│   ├── mqtt/
-│   │   ├── client.js          # MQTT WebSocket client
-│   │   └── index.js           # MQTT exports
-│   ├── diagnostics/
-│   │   ├── diagnose.js        # Data export and diagnostics
-│   │   ├── printer.js         # Pretty printing utilities
-│   │   ├── helper.js          # Helper functions
-│   │   └── index.js           # Diagnostics exports
-│   ├── config/
-│   │   └── constants.js        # hOn API constants and configuration
-│   └── utils/
-│       ├── crypto.js           # Cryptographic utilities
-│       └── exceptions.js       # Custom exception classes
-│
-├── test/                    # Test suite
-│   ├── run-tests.cmd        # Windows batch runner
-│   ├── test_basic.js        # Core functionality tests (19 tests)
-│   ├── test_events.js       # Event system tests (10 tests)
-│   └── test_javahon.js      # Library tests (16 tests)
-│
-├── examples/                # Example scripts
-│   ├── interactive-auth.js  # Interactive authentication
-│   ├── event-based-auth.js  # Token-based auth with TokenManager
-│   ├── cli-auth.js          # CLI authentication
-│   ├── simple-event-auth.js # Simple event-based auth
-│   ├── appliance-test.js    # Appliance control example
-│   ├── diagnostic-export.js # Export appliance data as JSON
-│   └── mqtt-test.js         # MQTT real-time communication
-│
-├── diagnostics/             # Generated diagnostic exports
-│   ├── appliance_diagnostic.json
-│   └── appliance_diagnostic_anonymous.json
-│
-├── hon-reference/           # Reference implementations (pyhOn)
-│   ├── hon-auth-reference/  # Python auth reference
-│   ├── hon-devices-reference/ # Python devices reference
-│   ├── hon-diagnostics-reference/ # Python diagnostics reference
-│   └── hon-mqtt-reference/  # Python MQTT reference
-│
-└── .gitignore              # Git ignore rules
-```
-
-### Adding New Features
-
-1. **New API Endpoints**: Add methods to `HonAPI` class in `src/api/client.js`
-2. **New Authentication Methods**: Extend `HonAuth` class in `src/auth/authenticator.js`
-3. **New Exception Types**: Add to `src/utils/exceptions.js`
-4. **New Constants**: Add to `src/config/constants.js`
-5. **New Diagnostic Tools**: Add to `src/diagnostics/`
+| `async with api:`    | `await api.create()`        |
 
 ## 🐛 Troubleshooting
 
