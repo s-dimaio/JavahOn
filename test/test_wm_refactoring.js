@@ -11,6 +11,7 @@ console.log('🧪 Testing JavahOn WashingMachine Refactoring\n');
 // Test 1: Static constants
 console.log('✅ Test 1: Static constants');
 console.log('MACHINE_STATES:', WashingMachine.MACHINE_STATES);
+console.log('  Note: machMode 0 and 1 both map to "ready" (matching hOn app behavior)');
 console.log('WASH_PHASES:', WashingMachine.WASH_PHASES);
 console.log();
 
@@ -75,9 +76,11 @@ const mockParent = {
 const wm = new WashingMachine();
 wm.parent = mockParent;
 
-console.log('  getStateKey():', wm.getStateKey());
+console.log('  getStateKey() [from appliance]:', wm.getStateKey());
+console.log('  getStateKey(5) [explicit]:', wm.getStateKey('5'));
 console.log('  getStateDisplay():', wm.getStateDisplay());
-console.log('  getWashPhaseKey():', wm.getWashPhaseKey());
+console.log('  getWashPhaseKey() [from appliance]:', wm.getWashPhaseKey());
+console.log('  getWashPhaseKey(11) [explicit]:', wm.getWashPhaseKey('11'));
 console.log('  getWashPhaseDisplay():', wm.getWashPhaseDisplay());
 console.log();
 
