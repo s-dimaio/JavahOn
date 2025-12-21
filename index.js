@@ -20,6 +20,10 @@ const HonAnonymousConnectionHandler = require('./lib/api/handlers/anonym');
 // Appliance management
 const { HonAppliance, HonAttribute, HonCommand, HonCommandLoader } = require('./lib/appliances');
 
+// Appliance types
+const WashingMachine = require('./lib/appliances/types/wm');
+const ApplianceBase = require('./lib/appliances/types/base');
+
 // Parameter management
 const { 
   HonParameter, 
@@ -68,6 +72,10 @@ module.exports = {
     HonAttribute,
     HonCommand,
     HonCommandLoader,
+    
+    // Appliance types
+    WashingMachine,
+    ApplianceBase,
     
     // Parameter management
     HonParameter,
