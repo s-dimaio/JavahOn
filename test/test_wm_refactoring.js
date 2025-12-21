@@ -1,0 +1,94 @@
+/**
+ * Test script for WashingMachine refactoring
+ * Tests the new methods in WashingMachine class
+ */
+
+const { HonParameterProgram } = require('../index');
+const WashingMachine = require('../lib/appliances/types/wm');
+
+console.log('🧪 Testing JavahOn WashingMachine Refactoring\n');
+
+// Test 1: Static constants
+console.log('✅ Test 1: Static constants');
+console.log('MACHINE_STATES:', WashingMachine.MACHINE_STATES);
+console.log('WASH_PHASES:', WashingMachine.WASH_PHASES);
+console.log();
+
+// Test 2: formatProgramName static method
+console.log('✅ Test 2: HonParameterProgram.formatProgramName()');
+const testCases = [
+  'IOT_WASH_COTTON',
+  'SPECIAL_49',
+  'RAPID_14_MIN',
+  'COTTON_60',
+  'SYNTHETICS',
+  'ECO_40_60'
+];
+
+testCases.forEach(test => {
+  const formatted = HonParameterProgram.formatProgramName(test);
+  console.log(`  "${test}" -> "${formatted}"`);
+});
+console.log();
+
+// Test 3: Mock appliance to test instance methods
+console.log('✅ Test 3: WashingMachine instance methods');
+
+// Create a mock parent appliance
+const mockParent = {
+  attributes: {
+    parameters: {
+      machMode: { value: '2' },
+      prPhase: { value: '2' },
+      prCode: { value: '9' },
+      prPosition: { value: '2' }
+    }
+  },
+  commands: {
+    startProgram: {
+      categories: {
+        'COTTON': {
+          parameters: {
+            prCode: { value: '1' },
+            prPosition: { value: '0' }
+          }
+        },
+        'SPECIAL_49': {
+          parameters: {
+            prCode: { value: '9' },
+            prPosition: { value: '2' }
+          }
+        }
+      },
+      parameters: {
+        temp: {
+          values: ['20', '30', '40', '60', '90']
+        },
+        spinSpeed: {
+          values: ['0', '800', '1000', '1200', '1400']
+        }
+      }
+    }
+  }
+};
+
+const wm = new WashingMachine();
+wm.parent = mockParent;
+
+console.log('  getStateKey():', wm.getStateKey());
+console.log('  getStateDisplay():', wm.getStateDisplay());
+console.log('  getWashPhaseKey():', wm.getWashPhaseKey());
+console.log('  getWashPhaseDisplay():', wm.getWashPhaseDisplay());
+console.log();
+
+console.log('  getAvailablePrograms():', wm.getAvailablePrograms());
+console.log('  getAvailableTemperatures():', wm.getAvailableTemperatures());
+console.log('  getAvailableSpinSpeeds():', wm.getAvailableSpinSpeeds());
+console.log();
+
+console.log('  findProgramByCode(9, 2):', wm.findProgramByCode(9, 2));
+console.log('  findProgramByCode(1, 0):', wm.findProgramByCode(1, 0));
+console.log('  getProgramInfo():', wm.getProgramInfo());
+console.log();
+
+console.log('🎉 All tests completed!');
