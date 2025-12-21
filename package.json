@@ -1,13 +1,14 @@
 {
   "name": "javahon",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "A JavaScript/Node.js library for hOn authentication - CommonJS port of pyhOn",
   "main": "index.js",
   "scripts": {
     "test": "test\\run-tests.cmd",
-    "test:basic": "node test/test_basic.js",
-    "test:events": "node test/test_events.js",
     "test:javahon": "node test/test_javahon.js",
+    "test:events": "node test/test_events.js",
+    "test:debug": "node test/test_debug.js",
+    "test:wm": "node test/test_wm.js",
     "start": "node lib/index.js",
     "auth": "node examples/interactive-auth.js",
     "login": "node examples/interactive-auth.js",
@@ -31,17 +32,16 @@
   "author": "JavahOn Contributors",
   "license": "MIT",
   "dependencies": {
-    "archiver": "^7.0.1",
-    "axios": "^0.27.2",
-    "axios-cookiejar-support": "^6.0.5",
-    "bcrypt": "^5.0.1",
+    "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
+    "tough-cookie": "^4.1.4"
+  },
+  "optionalDependencies": {
+    "archiver": "^7.0.1",
     "express": "^4.21.2",
     "http-proxy": "^1.18.1",
-    "jsonwebtoken": "^8.5.1",
     "mqtt": "^5.14.1",
-    "open": "^9.1.0",
-    "tough-cookie": "^4.1.4"
+    "open": "^9.1.0"
   },
   "devDependencies": {},
   "engines": {

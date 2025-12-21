@@ -5,6 +5,9 @@ package-lock.json
 # Testing
 coverage/
 .nyc_output/
+update_git.txt
+release.bat
+release.ps1
 
 # IDE
 .vscode/

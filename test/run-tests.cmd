@@ -5,19 +5,13 @@ echo.
 
 set FAILED=0
 
-node test/test_basic.js
+node test/test_javahon.js
 if errorlevel 1 set FAILED=1
 
 node test/test_events.js
 if errorlevel 1 set FAILED=1
 
-node test/test_javahon.js
-if errorlevel 1 set FAILED=1
-
-node test/test_debug_mode.js
-if errorlevel 1 set FAILED=1
-
-node test/test_library_debug.js
+node test/test_debug.js
 if errorlevel 1 set FAILED=1
 
 if %FAILED%==0 (

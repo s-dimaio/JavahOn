@@ -57,19 +57,31 @@ npm install
 
 ### Dependencies
 
-The following packages will be installed automatically:
-
+**Core Dependencies** (required for authentication and API operations):
 ```json
 {
-  "axios": "^0.27.2",
+  "axios": "^1.6.0",
   "cheerio": "^1.0.0-rc.12",
-  "tough-cookie": "^4.1.4",
-  "bcrypt": "^5.0.1",
-  "jsonwebtoken": "^8.5.1",
-  "mqtt": "^5.14.1",
-  "archiver": "^7.0.1"
+  "tough-cookie": "^4.1.4"
 }
 ```
+
+**Optional Dependencies** (for extended features - installation will not fail if these are unavailable):
+```json
+{
+  "mqtt": "^5.14.1",
+  "archiver": "^7.0.1",
+  "express": "^4.21.2",
+  "http-proxy": "^1.18.1",
+  "open": "^9.1.0"
+}
+```
+
+- `mqtt` - Required only if using real-time MQTT communication
+- `archiver` - Required only if using diagnostic ZIP export
+- `express`, `http-proxy`, `open` - Optional utilities for examples and testing
+
+To reduce installation size, optional dependencies can be skipped during installation with `npm install --no-optional`.
 
 ## 🔧 Quick Start
 
@@ -347,6 +359,32 @@ The library implements the complete hOn OAuth2 flow:
 
 ## 🧪 Testing
 
+### Run All Tests
+
+Execute the complete test suite:
+
+```bash
+npm test
+```
+
+This runs all unit tests (18 core tests + 10 event tests + 9 debug tests).
+
+### Test Specific Components
+
+```bash
+# Test core library functionality (HonAuth, HonAPI, HonDevice, etc.)
+npm run test:javahon
+
+# Test event system (token events, EventEmitter integration)
+npm run test:events
+
+# Test debug mode functionality
+npm run test:debug
+
+# Test WashingMachine appliance helpers
+npm run test:wm
+```
+
 ### Interactive Authentication Test
 
 The easiest way to test authentication with your real hOn credentials:
@@ -363,14 +401,6 @@ For automated testing or scripting:
 
 ```bash
 node examples/cli-auth.js your-email@example.com your-password
-```
-
-### Basic Functionality Test
-
-Test the library without real credentials:
-
-```bash
-npm run test:basic
 ```
 
 **Note:** You'll need valid hOn account credentials to test actual authentication.
