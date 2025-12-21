@@ -91,4 +91,30 @@ console.log('  findProgramByCode(1, 0):', wm.findProgramByCode(1, 0));
 console.log('  getProgramInfo():', wm.getProgramInfo());
 console.log();
 
+console.log('✅ Test 4: Remote Control Validation');
+console.log('  isRemoteControlEnabled():', wm.isRemoteControlEnabled());
+
+// Test with remoteCtrValid = 1 (enabled)
+mockParent.attributes.parameters.remoteCtrValid = { value: '1' };
+console.log('  With remoteCtrValid=1:', wm.isRemoteControlEnabled());
+
+try {
+  wm.validateRemoteControl('testCommand');
+  console.log('  validateRemoteControl() - ✅ Passed (no error thrown)');
+} catch (error) {
+  console.log('  validateRemoteControl() - ❌ Failed:', error.message);
+}
+
+// Test with remoteCtrValid = 0 (disabled)
+mockParent.attributes.parameters.remoteCtrValid = { value: '0' };
+console.log('  With remoteCtrValid=0:', wm.isRemoteControlEnabled());
+
+try {
+  wm.validateRemoteControl('testCommand');
+  console.log('  validateRemoteControl() - ❌ Should have thrown error');
+} catch (error) {
+  console.log('  validateRemoteControl() - ✅ Correctly threw error:', error.message);
+}
+console.log();
+
 console.log('🎉 All tests completed!');
