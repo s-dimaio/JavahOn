@@ -357,6 +357,140 @@ The library implements the complete hOn OAuth2 flow:
 6. **API Authentication** - Use ID token to get Cognito token
 7. **Token Refresh** - Automatically refresh expired tokens
 
+## 🎯 Event-Driven Architecture
+
+Starting from v1.4.0, the `WashingMachine` class extends `EventEmitter` to provide real-time state change notifications. This enables reactive programming patterns and simplifies integration with home automation platforms.
+
+### Available Events
+
+The `WashingMachine` class emits four types of events when calling the `updateState(params)` method:
+
+#### `programStarted`
+Emitted when a washing program begins execution (machMode transitions to 2).
+
+**Event Data:**
+```javascript
+{
+  machMode: 2,              // New state (running)
+  prPhase: 1,              // Current phase
+  program: "Cotton 60°",    // Program name (if available)
+  timestamp: 1704067200000  // Unix timestamp in milliseconds
+}
+```
+
+#### `programFinished`
+Emitted when a washing program completes (machMode transitions from 2 to any other state).
+
+**Event Data:**
+```javascript
+{
+  machMode: 7,              // New state (e.g., finished)
+  prPhase: 0,              // Phase at completion
+  program: null,            // Program name (if available)
+  timestamp: 1704067200000  // Unix timestamp in milliseconds
+}
+```
+
+#### `phaseChanged`
+Emitted when the washing phase changes during program execution (prPhase changes while machMode is 2).
+
+**Event Data:**
+```javascript
+{
+  machMode: 2,              // State (running)
+  prPhase: 3,              // New phase (e.g., rinse)
+  from: 2,                  // Previous phase (e.g., wash)
+  program: "Cotton 60°",    // Program name (if available)
+  timestamp: 1704067200000  // Unix timestamp in milliseconds
+}
+```
+
+#### `stateChanged`
+Emitted when the machine state changes (any machMode transition).
+
+**Event Data:**
+```javascript
+{
+  machMode: 3,              // New state (e.g., pause)
+  from: 2,                  // Previous state (e.g., running)
+  prPhase: 2,              // Current phase
+  program: "Cotton 60°",    // Program name (if available)
+  timestamp: 1704067200000  // Unix timestamp in milliseconds
+}
+```
+
+### Usage Example
+
+```javascript
+const { HonAPI } = require('javahon');
+
+// Initialize API and load appliances
+const api = new HonAPI(/* credentials */);
+await api.create();
+const appliances = await api.loadAppliances();
+
+// Get washing machine
+const wm = appliances[0].extra; // WashingMachine instance
+
+// Register event listeners
+wm.on('programStarted', (event) => {
+    console.log(`Program started: ${event.program}`);
+});
+
+wm.on('programFinished', (event) => {
+    console.log(`Program finished at ${new Date(event.timestamp)}`);
+});
+
+wm.on('phaseChanged', (event) => {
+    console.log(`Phase changed from ${event.from} to ${event.prPhase}`);
+});
+
+wm.on('stateChanged', (event) => {
+    console.log(`State changed from ${event.from} to ${event.machMode}`);
+});
+
+// Update state when receiving MQTT messages
+mqttClient.on('message', (topic, message) => {
+    const payload = JSON.parse(message.toString());
+    wm.updateState(payload.parameters);
+});
+```
+
+### Integration with MQTT
+
+The event system is designed to work seamlessly with MQTT real-time updates:
+
+```javascript
+const { HonMqttClient } = require('javahon');
+
+// Create MQTT client
+const mqttClient = new HonMqttClient(api);
+await mqttClient.connect();
+
+// Subscribe to appliance updates
+await mqttClient.subscribeToAppliance(appliance);
+
+// Handle MQTT messages
+mqttClient.on('message', (topic, message) => {
+    const payload = JSON.parse(message.toString());
+    
+    // Update washing machine state (triggers events)
+    appliance.extra.updateState(payload.parameters);
+});
+```
+
+For a complete working example, see [examples/washing-machine-events.js](examples/washing-machine-events.js).
+
+### Testing Events
+
+Run the event system tests:
+
+```bash
+node test/test_wm_events.js
+```
+
+This test suite verifies all four event types with various state transition scenarios.
+
 ## 🧪 Testing
 
 ### Run All Tests
