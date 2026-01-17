@@ -626,6 +626,30 @@ console.log('Energy consumption:', stats.energy);
 console.log('Usage hours:', stats.usageHours);
 ```
 
+### Program Lookup with Remote Control Filtering
+
+The WashingMachine appliance includes intelligent program resolution for handling duplicate prCode+prPosition combinations:
+
+```javascript
+// findProgramByCode now supports remote control filtering
+const program = appliance.extra.findProgramByCode(
+  prCode,           // Program code (e.g., 13)
+  prPosition,       // Program position (e.g., 4)
+  remoteEnabled     // Optional: whether remote control is enabled
+);
+
+// Example: prCode=13, prPosition=4
+// - With remote OFF → perfect_cotton_59 (standard program)
+// - With remote ON → prefers iot_* variants (IoT programs)
+```
+
+**Features:**
+- Filters programs based on remote control state (IoT vs standard)
+- Applies priority to real programs over SPECIAL programs
+- Includes comprehensive debug logging for troubleshooting
+
+This solves the issue of duplicate prCode+prPosition combinations by using the appliance's remote control status as a discriminator.
+
 ## � MQTT Real-time Communication
 
 JavahOn includes full MQTT support for real-time appliance updates via AWS IoT Core.
