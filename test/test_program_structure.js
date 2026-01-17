@@ -28,21 +28,21 @@ async function analyzeProgramStructure() {
       process.exit(1);
     }
     
-    // Create device (exactly like interactive-auth.js)
+    // Create device
     console.log('📱 Creating device identity...');
     const device = new HonDevice('ProgramStructureTest');
     console.log(`✅ Device created: ${device.mobileId}`);
     
-    // Initialize authentication (exactly like interactive-auth.js)
+    // Initialize and authenticate API
     console.log('🔐 Authenticating...');
-    const auth = new HonAuth(null, email, password, device, false);  // debug OFF for clean output
+    const api = new HonAPI({
+      email: email,
+      password: password,
+      mobileId: device.mobileId
+    });
     
-    // Authenticate (exactly like interactive-auth.js)
-    await auth.authenticate();
+    await api.create();
     console.log('✅ Authentication successful');
-    
-    // Initialize API (exactly like interactive-auth.js)
-    const api = new HonAPI(auth);
     
     // Load appliances
     console.log('📥 Loading appliances...');

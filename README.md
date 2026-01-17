@@ -517,6 +517,12 @@ npm run test:debug
 
 # Test WashingMachine appliance helpers
 npm run test:wm
+
+# Test program structure and duplicate detection
+npm run test:programs <email> <password>
+
+# Test API attributes loading (polling mechanism)
+npm run test:api-attributes <email> <password>
 ```
 
 ### Interactive Authentication Test

@@ -1,6 +1,6 @@
 {
   "name": "javahon",
-  "version": "1.4.9",
+  "version": "1.5.0",
   "description": "A JavaScript/Node.js library for hOn authentication - CommonJS port of pyhOn",
   "main": "index.js",
   "scripts": {
@@ -11,6 +11,7 @@
     "test:wm": "node test/test_wm.js",
     "test:wm-events": "node test/test_wm_events.js",
     "test:programs": "node test/test_program_structure.js",
+    "test:api-attributes": "node test/test_api_attributes.js",
     "start": "node lib/index.js",
     "auth": "node examples/interactive-auth.js",
     "login": "node examples/interactive-auth.js",
