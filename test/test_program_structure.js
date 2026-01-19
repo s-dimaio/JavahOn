@@ -13,6 +13,20 @@ const { HonAuth, HonAPI, HonAppliance, HonDevice } = require('../index');
 const fs = require('fs');
 const path = require('path');
 
+function safeSerialize(obj, seen = new WeakSet(), depth = 3) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (seen.has(obj) || depth === 0) return '[Circular]';
+  seen.add(obj);
+
+  const out = {};
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (typeof val === 'function') continue;
+    out[key] = safeSerialize(val, seen, depth - 1);
+  }
+  return out;
+}
+
 async function analyzeProgramStructure() {
   try {
     // Get credentials from command line
@@ -55,14 +69,27 @@ async function analyzeProgramStructure() {
     // Build minimal array of programs
     const programs = [];
     for (const [id, category] of Object.entries(startCmd.categories)) {
-      const prCode = category.parameters?.prCode?.value;
-      const prPosition = category.parameters?.prPosition?.value;
+      const parameters = category.parameters;
+      const prCode = parameters?.prCode?.value;
+      const prPosition = parameters?.prPosition?.value;
+      const programName = parameters?.program?.category;
+      const remote = parameters?.remoteActionable?.value;
+      const favourite = parameters?.favourite?.value;
+      
+
       if (prCode === undefined || prCode === null) continue;
       programs.push({
         id,
-        prCode: parseInt(prCode),
-        prPosition: prPosition !== undefined ? parseInt(prPosition) : null
+        parameters: safeSerialize(parameters, undefined, 3)
       });
+      // programs.push({
+      //   id,
+      //   prCode: parseInt(prCode),
+      //   prPosition: prPosition !== undefined ? parseInt(prPosition) : null,
+      //   category: programName,
+      //   remote: remote === '1' ? true : false,
+      //   favourite: favourite ==='1' ? true : false
+      // });
     }
 
     // Save to JSON
