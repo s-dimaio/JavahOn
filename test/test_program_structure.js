@@ -71,25 +71,27 @@ async function analyzeProgramStructure() {
     for (const [id, category] of Object.entries(startCmd.categories)) {
       const parameters = category.parameters;
       const prCode = parameters?.prCode?.value;
+      const prCode2 = parameters?.prCode?._attributes?.fixedValue; 
       const prPosition = parameters?.prPosition?.value;
       const programName = parameters?.program?.category;
       const remote = parameters?.remoteActionable?.value;
       const favourite = parameters?.favourite?.value;
-      
+
 
       if (prCode === undefined || prCode === null) continue;
-      programs.push({
-        id,
-        parameters: safeSerialize(parameters, undefined, 3)
-      });
       // programs.push({
       //   id,
-      //   prCode: parseInt(prCode),
-      //   prPosition: prPosition !== undefined ? parseInt(prPosition) : null,
-      //   category: programName,
-      //   remote: remote === '1' ? true : false,
-      //   favourite: favourite ==='1' ? true : false
+      //   parameters: safeSerialize(parameters, undefined, 3)
       // });
+      programs.push({
+        id,
+        //prCode: parseInt(prCode),
+        prCode: prCode2 !== undefined ? parseInt(prCode2) : null,
+        prPosition: prPosition !== undefined ? parseInt(prPosition) : null,
+        category: programName,
+        remote: remote === '1' ? true : false,
+        favourite: favourite === '1' ? true : false
+      });
     }
 
     // Save to JSON
