@@ -1,6 +1,6 @@
 {
   "name": "javahon",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "A JavaScript/Node.js library for hOn authentication - CommonJS port of pyhOn",
   "main": "index.js",
   "scripts": {
