@@ -250,45 +250,8 @@ auth.clear();                     // Clear authentication data
 - `tokenExpiresSoon` - Check if token expires soon
 
 **Debug Mode:**
-When `debug` is `true`, the authentication process will log detailed information about each step (OAuth URLs, cookies, response data, etc.). This is useful for troubleshooting but should be disabled in production. Error messages are always displayed via `console.error` regardless of debug setting.`
-
-## 📚 API Reference
-
-### Classes
-
-#### `HonAuth`
-Main authentication class handling the OAuth2 flow.
-
-**Constructor:**
-```javascript
-const auth = new HonAuth(session, email, password, device, debug);
-```
-
-**Parameters:**
-- `session` (Object, optional) - Axios session instance (creates new if not provided)
-- `email` (String) - User email for authentication
-- `password` (String) - User password for authentication
-- `device` (HonDevice, optional) - Device info (creates default if not provided)
-- `debug` (Boolean, optional, default: `false`) - Enable debug logging (console.log output)
-
-**Methods:**
-```javascript
-const auth = new HonAuth(session, email, password, device, debug);
-await auth.authenticate();        // Perform full authentication
-await auth.refresh(refreshToken); // Refresh existing tokens
-auth.clear();                     // Clear authentication data
-```
-
-**Properties:**
-- `cognitoToken` - Cognito authentication token
-- `accessToken` - OAuth2 access token
-- `refreshToken` - OAuth2 refresh token
-- `idToken` - OpenID Connect ID token
-- `tokenIsExpired` - Check if token has expired
-- `tokenExpiresSoon` - Check if token expires soon
-
-**Debug Mode:**
 When `debug` is `true`, the authentication process will log detailed information about each step (OAuth URLs, cookies, response data, etc.). This is useful for troubleshooting but should be disabled in production. Error messages are always displayed via `console.error` regardless of debug setting.
+
 
 #### `HonAPI`
 Main API client for interacting with hOn services.
@@ -359,63 +322,77 @@ The library implements the complete hOn OAuth2 flow:
 
 ## 🎯 Event-Driven Architecture
 
-Starting from v1.4.0, the `WashingMachine` class extends `EventEmitter` to provide real-time state change notifications. This enables reactive programming patterns and simplifies integration with home automation platforms.
+Starting from v1.4.0, the `WashingMachine` class uses **EventEmitter composition** to provide real-time state change notifications. It exposes `on`, `off`, `once`, `emit`, `removeListener`, `removeAllListeners` and `listenerCount` methods that delegate to an internal `EventEmitter` instance, enabling reactive programming patterns.
 
 ### Available Events
 
-The `WashingMachine` class emits four types of events when calling the `updateState(params)` method:
+The `WashingMachine` class emits five types of events:
+
+#### `attributesUpdated`
+Emitted on **every MQTT update**, immediately after the appliance's internal state has been refreshed. This is the primary event used by consumers (e.g., Homey app) to react to real-time parameter changes.
+
+**Event Data:** the raw `parameters` object from the MQTT payload (a key → `{ value }` map).
+
+```javascript
+wm.on('attributesUpdated', (params) => {
+    console.log('machMode:', params.machMode?.value);
+    console.log('remaining time:', params.remainingTimeMM?.value);
+});
+```
 
 #### `programStarted`
-Emitted when a washing program begins execution (machMode transitions to 2).
+Emitted when `machMode` transitions **to 2** (running).
 
 **Event Data:**
 ```javascript
 {
   machMode: 2,              // New state (running)
-  prPhase: 1,              // Current phase
-  program: "Cotton 60°",    // Program name (if available)
+  prPhase: 1,               // Current phase number
+  program: "cottons",       // prStr or prCode value from MQTT (if available)
   timestamp: 1704067200000  // Unix timestamp in milliseconds
 }
 ```
 
 #### `programFinished`
-Emitted when a washing program completes (machMode transitions from 2 to any other state).
+Emitted when `machMode` transitions **from 2** to any other state.
 
 **Event Data:**
 ```javascript
 {
-  machMode: 7,              // New state (e.g., finished)
-  prPhase: 0,              // Phase at completion
-  program: null,            // Program name (if available)
-  timestamp: 1704067200000  // Unix timestamp in milliseconds
+  machMode: 5,              // New state (e.g., finished = 5 or 7)
+  prPhase: 0,               // Phase at completion
+  program: null,            // Program identifier (if available)
+  timestamp: 1704067200000
 }
 ```
 
 #### `phaseChanged`
-Emitted when the washing phase changes during program execution (prPhase changes while machMode is 2).
+Emitted when `prPhase` changes while `machMode` is 2 (in progress).
 
 **Event Data:**
 ```javascript
 {
-  machMode: 2,              // State (running)
-  prPhase: 3,              // New phase (e.g., rinse)
-  from: 2,                  // Previous phase (e.g., wash)
-  program: "Cotton 60°",    // Program name (if available)
-  timestamp: 1704067200000  // Unix timestamp in milliseconds
+  from: 2,                  // Previous phase number
+  to: 3,                    // New phase number
+  fromKey: "washing",       // Previous phase key (from WASH_PHASES map)
+  toKey: "rinse",           // New phase key (from WASH_PHASES map)
+  program: "cottons",       // Program identifier (if available)
+  timestamp: 1704067200000
 }
 ```
 
 #### `stateChanged`
-Emitted when the machine state changes (any machMode transition).
+Emitted on any `machMode` transition.
 
 **Event Data:**
 ```javascript
 {
-  machMode: 3,              // New state (e.g., pause)
-  from: 2,                  // Previous state (e.g., running)
-  prPhase: 2,              // Current phase
-  program: "Cotton 60°",    // Program name (if available)
-  timestamp: 1704067200000  // Unix timestamp in milliseconds
+  from: 2,                  // Previous machMode value
+  to: 3,                    // New machMode value
+  fromKey: "running",       // Previous state key (from MACHINE_STATES map)
+  toKey: "paused",          // New state key (from MACHINE_STATES map)
+  prPhase: 7,               // Current phase number
+  timestamp: 1704067200000
 }
 ```
 
@@ -424,58 +401,49 @@ Emitted when the machine state changes (any machMode transition).
 ```javascript
 const { HonAPI } = require('javahon');
 
-// Initialize API and load appliances
 const api = new HonAPI(/* credentials */);
 await api.create();
 const appliances = await api.loadAppliances();
 
-// Get washing machine
-const wm = appliances[0].extra; // WashingMachine instance
+// Get WashingMachine helper instance
+const wm = appliances[0].extra;
 
-// Register event listeners
+// React to any attribute update (most common use case)
+wm.on('attributesUpdated', (params) => {
+    console.log('Received update:', params);
+});
+
 wm.on('programStarted', (event) => {
     console.log(`Program started: ${event.program}`);
 });
 
 wm.on('programFinished', (event) => {
-    console.log(`Program finished at ${new Date(event.timestamp)}`);
+    console.log(`Finished at ${new Date(event.timestamp)}`);
 });
 
 wm.on('phaseChanged', (event) => {
-    console.log(`Phase changed from ${event.from} to ${event.prPhase}`);
+    console.log(`Phase: ${event.fromKey} → ${event.toKey}`);
 });
 
 wm.on('stateChanged', (event) => {
-    console.log(`State changed from ${event.from} to ${event.machMode}`);
-});
-
-// Update state when receiving MQTT messages
-mqttClient.on('message', (topic, message) => {
-    const payload = JSON.parse(message.toString());
-    wm.updateState(payload.parameters);
+    console.log(`State: ${event.fromKey} → ${event.toKey}`);
 });
 ```
 
 ### Integration with MQTT
 
-The event system is designed to work seamlessly with MQTT real-time updates:
+Events are triggered automatically via `updateFromMQTT()`, which the `MQTTClient` calls internally on each incoming MQTT message. No manual wiring is needed:
 
 ```javascript
-const { HonMqttClient } = require('javahon');
+const { MQTTClient } = require('javahon');
 
-// Create MQTT client
-const mqttClient = new HonMqttClient(api);
+const mqttClient = new MQTTClient(api, appliances);
 await mqttClient.connect();
 
-// Subscribe to appliance updates
-await mqttClient.subscribeToAppliance(appliance);
-
-// Handle MQTT messages
-mqttClient.on('message', (topic, message) => {
-    const payload = JSON.parse(message.toString());
-    
-    // Update washing machine state (triggers events)
-    appliance.extra.updateState(payload.parameters);
+// updateFromMQTT() is called by MQTTClient automatically.
+// Simply register listeners on the WashingMachine instance:
+appliance.extra.on('attributesUpdated', (params) => {
+    // Triggered on every MQTT message for this appliance
 });
 ```
 
@@ -483,13 +451,11 @@ For a complete working example, see [examples/washing-machine-events.js](example
 
 ### Testing Events
 
-Run the event system tests:
-
 ```bash
 node test/test_wm_events.js
 ```
 
-This test suite verifies all four event types with various state transition scenarios.
+This test suite verifies all five event types with various state transition scenarios.
 
 ## 🧪 Testing
 
@@ -632,29 +598,29 @@ console.log('Energy consumption:', stats.energy);
 console.log('Usage hours:', stats.usageHours);
 ```
 
-### Program Lookup with Remote Control Filtering
+### Program Lookup with Disambiguation
 
-The WashingMachine appliance includes intelligent program resolution for handling duplicate prCode+prPosition combinations:
+The `WashingMachine` appliance includes intelligent program resolution. Since custom favourites share the same `prCode` and `prPosition` as their base programs (differing only in `temp` and `spinSpeed`), `findProgramByCode` uses a cascading disambiguation strategy:
 
 ```javascript
-// findProgramByCode now supports remote control filtering
 const program = appliance.extra.findProgramByCode(
   prCode,           // Program code (e.g., 13)
   prPosition,       // Program position (e.g., 4)
-  remoteEnabled     // Optional: whether remote control is enabled
+  remoteEnabled,    // Optional: true → prefer IoT variants; false → prefer standard
+  temp,             // Optional: temperature in °C from MQTT (disambiguates custom favourites)
+  spinSpeed         // Optional: spin speed in RPM from MQTT
 );
-
-// Example: prCode=13, prPosition=4
-// - With remote OFF → perfect_cotton_59 (standard program)
-// - With remote ON → prefers iot_* variants (IoT programs)
 ```
 
-**Features:**
-- Filters programs based on remote control state (IoT vs standard)
-- Applies priority to real programs over SPECIAL programs
-- Includes comprehensive debug logging for troubleshooting
+**Disambiguation order** (each step only applied when multiple matches remain):
+1. IoT vs. non-IoT filtering (based on `remoteControlEnabled`)
+2. Real programs preferred over `SPECIAL_*` programs
+3. Match by `temp` value
+4. Match by `spinSpeed` value
+5. Prefer `favourite === 1`
+6. Fallback: first match in list
 
-This solves the issue of duplicate prCode+prPosition combinations by using the appliance's remote control status as a discriminator.
+`getAvailablePrograms()` now includes custom favourites (previously excluded), adding a `favourite` field (`0` or `1`) to each returned entry.
 
 ## � MQTT Real-time Communication
 

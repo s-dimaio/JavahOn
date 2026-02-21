@@ -57,7 +57,20 @@ const mockParent = {
         'SPECIAL_49': {
           parameters: {
             prCode: { value: '9' },
-            prPosition: { value: '2' }
+            prPosition: { value: '2' },
+            temp: { value: '30' },
+            spinSpeed: { value: '600' },
+            favourite: { value: '0' }
+          }
+        },
+        'Mio Cotone Preferito': {
+          // Custom favourite: same prCode/prPosition as SPECIAL_49, different temp/spinSpeed
+          parameters: {
+            prCode: { value: '9' },
+            prPosition: { value: '2' },
+            temp: { value: '60' },
+            spinSpeed: { value: '1000' },
+            favourite: { value: '1' }
           }
         }
       },
@@ -78,10 +91,10 @@ wm.parent = mockParent;
 
 console.log('  getStateKey() [from appliance]:', wm.getStateKey());
 console.log('  getStateKey(5) [explicit]:', wm.getStateKey('5'));
-console.log('  getStateDisplay():', wm.getStateDisplay());
+// getStateDisplay() removed - method no longer exists
 console.log('  getWashPhaseKey() [from appliance]:', wm.getWashPhaseKey());
 console.log('  getWashPhaseKey(11) [explicit]:', wm.getWashPhaseKey('11'));
-console.log('  getWashPhaseDisplay():', wm.getWashPhaseDisplay());
+// getWashPhaseDisplay() removed - method no longer exists
 console.log();
 
 console.log('  getAvailablePrograms():', wm.getAvailablePrograms());
@@ -89,7 +102,10 @@ console.log('  getAvailableTemperatures():', wm.getAvailableTemperatures());
 console.log('  getAvailableSpinSpeeds():', wm.getAvailableSpinSpeeds());
 console.log();
 
-console.log('  findProgramByCode(9, 2):', wm.findProgramByCode(9, 2));
+// Test custom favourite disambiguation
+console.log('  findProgramByCode(9, 2) [no temp/spin]:', wm.findProgramByCode(9, 2));
+console.log('  findProgramByCode(9, 2, null, 60, 1000) [custom fav temp]:', wm.findProgramByCode(9, 2, null, 60, 1000));
+console.log('  findProgramByCode(9, 2, null, 30, 600) [base prog temp]:', wm.findProgramByCode(9, 2, null, 30, 600));
 console.log('  findProgramByCode(1, 0):', wm.findProgramByCode(1, 0));
 console.log('  getProgramInfo():', wm.getProgramInfo());
 console.log();
